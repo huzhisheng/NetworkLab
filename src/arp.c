@@ -156,7 +156,7 @@ static uint8_t *arp_lookup(uint8_t *ip)
 static void arp_req(uint8_t *target_ip)
 {
     // TODO
-    buf_init(&txbuf,sizeof(arp_pkt_t)+18);
+    buf_init(&txbuf,sizeof(arp_pkt_t));
     arp_pkt_t* p = (arp_pkt_t*)txbuf.data;
     p->hw_type = swap16(0x1);
     p->pro_type = swap16(0x0800);
