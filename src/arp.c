@@ -225,6 +225,7 @@ void arp_in(buf_t *buf)
                 }
             }
             if(i == NET_IP_LEN){    //发送应答报文
+                buf_init(&txbuf, sizeof(arp_pkt_t));
                 arp_pkt_t* reply_arp = (arp_pkt_t*)txbuf.data;
                 reply_arp->hw_type = swap16(0x1);
                 reply_arp->pro_type = swap16(0x0800);
