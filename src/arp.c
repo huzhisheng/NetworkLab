@@ -45,7 +45,90 @@ arp_buf_t arp_buf;
 void arp_update(uint8_t *ip, uint8_t *mac, arp_state_t state)
 {
     // TODO
+    uint8_t my_ip_addr[8] = DRIVER_IF_IP;
+    time_t now_time;
+    time(&now_time);
+    for(int i = 0; i < ARP_MAX_ENTRY; i++){
+        arp_entry_t* arp_entry = &arp_table[i];
+        if((now_time - arp_entry->timeout) > ARP_TIMEOUT_SEC){
+            arp_entry->state = ARP_INVALID;
+        }
+        int j;      // 判断一下该ip是否是本机ip, 如果是则标记为INVALID
+        for(j = 0; j < NET_IP_LEN; j++){
+            if(arp_entry->ip[j] != my_ip_addr[j]){
+                break;
+            }
+        }
+        if(j == NET_IP_LEN){
+            arp_entry->state = ARP_INVALID;
+        }
+    }
 
+    // 查看该ip是否已存在, 若结果不为-1, 则代表存在于下标already_i的arp
+    int already_i = -1; 
+    for(int i = 0; i < ARP_MAX_ENTRY; i++){
+        arp_entry_t* arp_entry = &arp_table[i];
+        int j;
+        for(j = 0; j < NET_IP_LEN; j++){
+            if(arp_entry->ip[j] != ip[j]){
+                break;
+            }
+        }
+        if(j == NET_IP_LEN){
+            already_i = i;
+        }
+    }
+
+    if(already_i != -1){
+        arp_entry_t* arp_entry = &arp_table[already_i];
+        for(int j = 0; j < NET_IP_LEN; j++){
+            arp_entry->ip[j] = ip[j];
+        }
+        for(int j = 0; j < NET_MAC_LEN; j++){
+            arp_entry->mac[j] = mac[j];
+        }
+        arp_entry->state = state;
+        arp_entry->timeout = now_time;
+        return;
+    }
+
+    // 查找arp表中是否有INVALID
+    for(int i = 0; i < ARP_MAX_ENTRY; i++){
+        arp_entry_t* arp_entry = &arp_table[i];
+        if(arp_entry->state == ARP_INVALID){
+            for(int j = 0; j < NET_IP_LEN; j++){
+                arp_entry->ip[j] = ip[j];
+            }
+            for(int j = 0; j < NET_MAC_LEN; j++){
+                arp_entry->mac[j] = mac[j];
+            }
+            arp_entry->state = state;
+            arp_entry->timeout = now_time;
+            return;
+        }
+    }
+
+    // arp表中没有INVALID, 需要找一个间隔时间最大的作为插入项
+    int max_i = 0;
+    time_t max_interval = 0;
+    for(int i = 0; i < ARP_MAX_ENTRY; i++){
+        arp_entry_t* arp_entry = &arp_table[i];
+        if(now_time - arp_entry->timeout > max_interval){
+            max_i = i;
+            max_interval = now_time - arp_entry->timeout;
+        }
+    }
+    
+    arp_entry_t* arp_entry = &arp_table[max_i];
+    for(int j = 0; j < NET_IP_LEN; j++){
+        arp_entry->ip[j] = ip[j];
+    }
+    for(int j = 0; j < NET_MAC_LEN; j++){
+        arp_entry->mac[j] = mac[j];
+    }
+    arp_entry->state = state;
+    arp_entry->timeout = now_time;
+    return;
 }
 
 /**
@@ -73,7 +156,32 @@ static uint8_t *arp_lookup(uint8_t *ip)
 static void arp_req(uint8_t *target_ip)
 {
     // TODO
+    buf_init(&txbuf,sizeof(arp_pkt_t)+18);
+    arp_pkt_t* p = (arp_pkt_t*)txbuf.data;
+    p->hw_type = swap16(0x1);
+    p->pro_type = swap16(0x0800);
+    p->hw_len = 0x6;
+    p->pro_len = 0x4;
+    p->opcode = swap16(ARP_REQUEST);
+    uint8_t my_mac_addr[NET_MAC_LEN] = DRIVER_IF_MAC;
+    for(int i=0; i < NET_MAC_LEN; i++){
+        p->sender_mac[i] = my_mac_addr[i];
+    }
+    uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
+    for(int i=0; i < NET_IP_LEN; i++){
+        p->sender_ip[i] = my_ip_addr[i];
+    }
+    
+    for(int i=0; i < NET_IP_LEN; i++){
+        p->target_ip[i] = target_ip[i];
+    }
 
+    for(int i=0; i < NET_MAC_LEN; i++){
+        p->target_mac[i] = 0x00;
+    }
+    uint8_t target_mac_addr[NET_MAC_LEN] = {0xff,0xff,0xff,0xff,0xff,0xff};
+    arp_update(target_ip, target_mac_addr, ARP_PENDING);
+    ethernet_out(&txbuf, target_mac_addr, NET_PROTOCOL_ARP);
 }
 
 /**
@@ -96,7 +204,54 @@ static void arp_req(uint8_t *target_ip)
 void arp_in(buf_t *buf)
 {
     // TODO
+    arp_pkt_t* p = (arp_pkt_t*)buf->data;
+    if(swap16(p->hw_type) != 0x1 || swap16(p->pro_type) != 0x0800 || 
+        p->hw_len != 6 || p->pro_len != 4 || ((swap16(p->opcode) != ARP_REQUEST) && (swap16(p->opcode) != ARP_REPLY))){
+            return;
+        }
     
+    arp_update(p->sender_ip, p->sender_mac, ARP_VALID);
+
+    if(arp_buf.valid == 1){
+        arp_out(&arp_buf.buf,arp_buf.ip,arp_buf.protocol);
+        arp_buf.valid = 0;
+    }else{
+        if(swap16(p->opcode) == ARP_REQUEST){
+            uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
+            int i;
+            for(i = 0; i < NET_IP_LEN; i++){
+                if(p->target_ip[i] != my_ip_addr[i]){
+                    break;
+                }
+            }
+            if(i == NET_IP_LEN){    //发送应答报文
+                arp_pkt_t* reply_arp = (arp_pkt_t*)txbuf.data;
+                reply_arp->hw_type = swap16(0x1);
+                reply_arp->pro_type = swap16(0x0800);
+                reply_arp->hw_len = 0x6;
+                reply_arp->pro_len = 0x4;
+                reply_arp->opcode = swap16(ARP_REPLY);
+                uint8_t my_mac_addr[NET_MAC_LEN] = DRIVER_IF_MAC;
+                for(int i=0; i < NET_MAC_LEN; i++){
+                    reply_arp->sender_mac[i] = my_mac_addr[i];
+                }
+                uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
+                for(int i=0; i < NET_IP_LEN; i++){
+                    reply_arp->sender_ip[i] = my_ip_addr[i];
+                }
+                
+                for(int i=0; i < NET_IP_LEN; i++){
+                    reply_arp->target_ip[i] = p->sender_ip[i];
+                }
+
+                for(int i=0; i < NET_MAC_LEN; i++){
+                    reply_arp->target_mac[i] = p->sender_mac[i];
+                }
+                
+                ethernet_out(&txbuf, p->sender_mac, NET_PROTOCOL_ARP);
+            }
+        }
+    }
 }
 
 /**
@@ -113,6 +268,28 @@ void arp_in(buf_t *buf)
 void arp_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol)
 {
     // TODO
+    int i,j;
+    for(i=0; i < ARP_MAX_ENTRY; i++){
+        for(j=0; j < NET_IP_LEN; j++){
+            if(arp_table[i].ip[j] != ip[j]){
+                break;
+            }
+        }
+        if(j == NET_IP_LEN){
+            break;
+        }
+    }
+    if(i == ARP_MAX_ENTRY){ //没找到arp
+        arp_buf.buf = *buf;
+        arp_buf.valid = 1;
+        for(int k = 0; k < NET_IP_LEN; k++){
+            arp_buf.ip[k] = ip[k];
+        }
+        arp_buf.protocol = protocol;
+        arp_req(ip);
+    }else{
+        ethernet_out(buf, arp_table[i].mac, protocol);
+    }
 
 }
 

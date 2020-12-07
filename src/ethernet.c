@@ -18,7 +18,7 @@ void ethernet_in(buf_t *buf)
 {
     // TODO
     uint16_t protocol = ((uint16_t)(buf->data[2*NET_MAC_LEN] & 0xff) << 8) | buf->data[2*NET_MAC_LEN + 1];
-    //uint16_t protocol = swap16(protocol_after_swap);  // 不需要swap
+    
     if(protocol == NET_PROTOCOL_IP){
         buf_remove_header(buf,sizeof(struct ether_hdr));
         ip_in(buf);
@@ -42,7 +42,7 @@ void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol)
     // TODO
     uint8_t self_mac[NET_MAC_LEN] = DRIVER_IF_MAC;
     buf_add_header(buf,sizeof(struct ether_hdr));
-    // 不需要swap
+
     for(int i=0;i<NET_MAC_LEN;i++){
         buf->data[i] = mac[i];
     }
