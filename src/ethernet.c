@@ -42,15 +42,15 @@ void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol)
     // TODO
     uint8_t self_mac[NET_MAC_LEN] = DRIVER_IF_MAC;
     buf_add_header(buf,sizeof(struct ether_hdr));
+    // 不需要swap
     for(int i=0;i<NET_MAC_LEN;i++){
         buf->data[i] = mac[i];
     }
     for(int i=0;i<NET_MAC_LEN;i++){
         buf->data[i+NET_MAC_LEN] = self_mac[i];
     }
-    uint16_t protocol_after_swap = protocol;    // 不需要swap
-    buf->data[2*NET_MAC_LEN] = (uint8_t)((protocol_after_swap >> 8) & 0xff);
-    buf->data[2*NET_MAC_LEN + 1] = (uint8_t)(protocol_after_swap & 0xff);
+    buf->data[2*NET_MAC_LEN] = (uint8_t)((protocol>> 8) & 0xff);
+    buf->data[2*NET_MAC_LEN + 1] = (uint8_t)(protocol & 0xff);
     driver_send(buf);
 }
 
