@@ -24,7 +24,45 @@
 void ip_in(buf_t *buf)
 {
     // TODO 
+    ip_hdr_t* ip = (ip_hdr_t*)buf->data;
+    if(ip->version != 0x4 || swap16(ip->total_len) > 1500 || ip->hdr_len > 60 || ip->hdr_len < 20){
+        return;
+    }
 
+    uint16_t old_checksum = swap16(ip->hdr_checksum);
+    ip->hdr_checksum = 0;
+    uint16_t new_checksum = checksum16(buf,sizeof(ip_hdr_t));
+    if(old_checksum != new_checksum)
+        return;
+    
+    int i;
+    uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
+    for(i=0; i<NET_IP_LEN; i++){
+        if(ip->dest_ip[i] != my_ip_addr[i])
+            break;
+    }
+    if(i != NET_IP_LEN)
+        return;
+    uint8_t proto = ip->protocol;
+    uint8_t src_ip[NET_IP_LEN];
+    for(int i=0; i<NET_IP_LEN; i++){
+        src_ip[i] = ip->src_ip[i];
+    }
+    buf_remove_header(buf,sizeof(ip_hdr_t));
+    switch (proto)
+    {
+        case 1: //ICMP
+            icmp_in(buf, src_ip);
+            break;
+        case 6: //TCP
+            break;
+        case 17: //UDP
+            udp_in(buf, src_ip);
+            break;
+        default:
+            icmp_unreachable(buf, src_ip, ICMP_CODE_PROTOCOL_UNREACH);
+            break;
+    }
 }
 
 /**
