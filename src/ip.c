@@ -25,13 +25,14 @@ void ip_in(buf_t *buf)
 {
     // TODO 
     ip_hdr_t* ip = (ip_hdr_t*)buf->data;
-    if(ip->version != 0x4 || swap16(ip->total_len) > 1500 || ip->hdr_len > 60 || ip->hdr_len < 20){
+    if(ip->version != 0x4 || swap16(ip->total_len) > 1500 || (ip->hdr_len)*4 > 60 || (ip->hdr_len)*4 < 20){
         return;
     }
 
     uint16_t old_checksum = swap16(ip->hdr_checksum);
     ip->hdr_checksum = 0;
-    uint16_t new_checksum = checksum16(buf,sizeof(ip_hdr_t));
+    uint16_t new_checksum = checksum16(buf,sizeof(ip_hdr_t));   //IP的checksum只覆盖IP头
+    ip->hdr_checksum = swap16(old_checksum);    //恢复checksum
     if(old_checksum != new_checksum)
         return;
     
@@ -48,18 +49,20 @@ void ip_in(buf_t *buf)
     for(int i=0; i<NET_IP_LEN; i++){
         src_ip[i] = ip->src_ip[i];
     }
-    buf_remove_header(buf,sizeof(ip_hdr_t));
+    
     switch (proto)
     {
         case 1: //ICMP
+            buf_remove_header(buf,sizeof(ip_hdr_t));
             icmp_in(buf, src_ip);
             break;
-        case 6: //TCP
+        case 6:     //TCP
             break;
-        case 17: //UDP
+        case 17:    //UDP
+            buf_remove_header(buf,sizeof(ip_hdr_t));
             udp_in(buf, src_ip);
             break;
-        default:
+        default:    //发送unreachable的icmp不需要去除ip头
             icmp_unreachable(buf, src_ip, ICMP_CODE_PROTOCOL_UNREACH);
             break;
     }
@@ -82,7 +85,30 @@ void ip_in(buf_t *buf)
 void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf)
 {
     // TODO
-    
+    // id就是标识？
+    buf_add_header(buf,sizeof(ip_hdr_t));
+    ip_hdr_t* ip_head = (ip_hdr_t*)buf->data;
+    ip_head->hdr_len = sizeof(ip_hdr_t)/4;
+    ip_head->version = 0x4;
+    ip_head->tos = 0;
+    ip_head->total_len = swap16(buf->len);
+    ip_head->id = swap16(id);
+    ip_head->flags_fragment = swap16(((id&0xffff) << 16) | ((mf & 0x1)<<13) | (offset/8));
+    ip_head->ttl = 0xff;
+    ip_head->protocol = protocol;
+    ip_head->hdr_checksum = 0;
+
+    uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
+    for(int i=0; i<NET_IP_LEN; i++){
+        ip_head->src_ip[i] = my_ip_addr[i];
+    }
+    for(int i=0; i<NET_IP_LEN; i++){
+        ip_head->dest_ip[i] = ip[i];
+    }
+
+    uint16_t real_checksum = checksum16(buf,sizeof(ip_hdr_t));
+    ip_head->hdr_checksum = swap16(real_checksum);
+    arp_out(buf,ip,NET_PROTOCOL_IP);
 }
 
 /**
@@ -106,5 +132,22 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
 void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol)
 {
     // TODO 
-    
+    if(buf->len > 1500-sizeof(ip_hdr_t)){
+        int lef_data_len = buf->len;
+        int offset = 0;
+        while(lef_data_len > 1500-sizeof(ip_hdr_t)){
+            buf_t ip_buf;
+            buf_init(&ip_buf, ETHERNET_MTU - sizeof(ip_hdr_t));
+            memcpy(ip_buf.data, buf->data[offset], 1500-sizeof(ip_hdr_t));
+            ip_fragment_out(&ip_buf, ip, protocol, 0, offset, 1);
+            offset += 1500-sizeof(ip_hdr_t);
+            lef_data_len -= 1500-sizeof(ip_hdr_t);
+        }
+        buf_t ip_buf;
+        buf_init(&ip_buf, lef_data_len);
+        memcpy(ip_buf.data, buf->data[offset], lef_data_len);
+        ip_fragment_out(&ip_buf, ip, protocol, 0, offset, 0);
+    }else{
+        ip_fragment_out(buf,ip,protocol,0,0,0);
+    }
 }

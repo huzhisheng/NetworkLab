@@ -20,6 +20,23 @@
 void icmp_in(buf_t *buf, uint8_t *src_ip)
 {
     // TODO
+    if(buf->len < sizeof(icmp_hdr_t)){
+        return;
+    }
+    icmp_hdr_t* icmp_head = (icmp_hdr_t*)buf->data;
+    if(icmp_head->type == 8 && icmp_head->code == 0){
+        buf_init(&txbuf,buf->len);
+        icmp_hdr_t* new_icmp = (icmp_hdr_t*)txbuf.data;
+        new_icmp->type = 0;
+        new_icmp->code = 0;
+        new_icmp->checksum = 0;
+        new_icmp->id = 0;
+        new_icmp->seq = 0;
+        memcpy(&txbuf.data[sizeof(icmp_hdr_t)], &buf->data[sizeof(icmp_hdr_t)], buf->len - sizeof(icmp_hdr_t));
+        uint16_t real_checksum = checksum16(&txbuf, txbuf.len); // checksum覆盖的区域是整个ICMP头+ICMP数据?
+        new_icmp->checksum = swap16(real_checksum);
+        ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
+    }
 }
 
 /**
@@ -36,5 +53,15 @@ void icmp_in(buf_t *buf, uint8_t *src_ip)
 void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code)
 {
     // TODO
-    
+    buf_init(&txbuf, sizeof(icmp_hdr_t) + sizeof(ip_hdr_t) + 8);
+    icmp_hdr_t* new_icmp = (icmp_hdr_t*)txbuf.data;
+    new_icmp->type = 3;
+    new_icmp->code = code;
+    new_icmp->checksum = 0;
+    new_icmp->id = 0;
+    new_icmp->seq = 0;
+    memcpy(&txbuf.data[sizeof(icmp_hdr_t)], recv_buf->data, sizeof(ip_hdr_t) + 8);
+    uint16_t real_checksum = checksum16(&txbuf, txbuf.len);
+    new_icmp->checksum = swap16(real_checksum);
+    ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
 }
