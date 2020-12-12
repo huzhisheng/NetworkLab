@@ -45,9 +45,9 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dest_ip)
     }
     buf->data[8] = 0;
     buf->data[9] = 17;
-    uint16_t* udp_len_p = &buf->data[10];
+    uint16_t* udp_len_p = (uint16_t*)&buf->data[10];
     *udp_len_p = swap16(udp_len);
-    uint16_t real_checksum = checksum16(buf,buf->len);
+    uint16_t real_checksum = checksum16((uint16_t*)buf->data,buf->len);
     for(int i=0; i<12; i++){
         buf->data[i] = old_ip_head[i];
     }
@@ -78,27 +78,35 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dest_ip)
  */
 void udp_in(buf_t *buf, uint8_t *src_ip)
 {
+    printf("udp_in执行\n");
     // TODO
     udp_hdr_t* udp_head = (udp_hdr_t*)buf->data;
-    if(udp_head->total_len < 8)
+    if(udp_head->total_len < 8){
+        printf("udp报头长度错误\n");
         return;
+    }
+        
     
     uint16_t old_checksum = swap16(udp_head->checksum);
     udp_head->checksum = 0;
     uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
     uint16_t new_checksum = udp_checksum(buf, src_ip, my_ip_addr);
-    if(old_checksum != new_checksum)
+    if(old_checksum != new_checksum){
+        printf("udp checksum错误, old_checksum: %x, new_checksum: %x\n", old_checksum, new_checksum);
         return;
+    }
+
 
     for(int i=0; i<UDP_MAX_HANDLER; i++){
-        if(udp_table[i].valid == 1 && udp_table[i].port == udp_head->dest_port){
+        if(udp_table[i].valid == 1 && udp_table[i].port == swap16(udp_head->dest_port)){
             uint16_t src_port = swap16(udp_head->src_port);
             buf_remove_header(buf,sizeof(udp_hdr_t));
+            printf("长度:%d\n",buf->len);
             udp_table[i].handler(&udp_table[i], src_ip, src_port, buf);
             return;
         }
     }
-
+    printf("发送unreachable\n");
     buf_add_header(buf,sizeof(ip_hdr_t));
     icmp_unreachable(buf, src_ip, ICMP_CODE_PORT_UNREACH);
 }
@@ -118,11 +126,12 @@ void udp_in(buf_t *buf, uint8_t *src_ip)
 void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dest_ip, uint16_t dest_port)
 {
     // TODO
+    printf("udp_out执行, 将要发送给%d端口\n",dest_port);
     buf_add_header(buf,sizeof(udp_hdr_t));
     udp_hdr_t* udp_head = (udp_hdr_t*)buf->data;
     udp_head->src_port = swap16(src_port);
     udp_head->dest_port = swap16(dest_port);
-    udp_head->total_len = buf->len;
+    udp_head->total_len = swap16(buf->len);
     udp_head->checksum = 0;
     uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
     uint16_t real_checksum = udp_checksum(buf,my_ip_addr,dest_ip);

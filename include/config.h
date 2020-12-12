@@ -4,14 +4,16 @@
 #define DRIVER_IF_NAME "ens33" //使用的物理网卡名称
 #define DRIVER_IF_IP      \
     {                     \
-        192, 168, 163, 103 \
+        192, 168, 145, 103 \
     } //自定义网卡ip地址
+    //192, 168, 163, 103
+    //192, 168, 145, 103
 #define DRIVER_IF_MAC                      \
     {                                      \
-        0x11, 0x22, 0x33, 0x44, 0x55, 0x66 \
+        0x00, 0x0c, 0x29, 0xb1, 0xe6, 0x3c \
     }                     //自定义网卡mac地址
-
-
+//0x11, 0x22, 0x33, 0x44, 0x55, 0x66
+//0x00, 0x0c, 0x29, 0xb1, 0xe6, 0x3c
 #define ETHERNET_MTU 1500 //以太网最大传输单元
 
 #define ARP_MAX_ENTRY 16       //arp表最大长度

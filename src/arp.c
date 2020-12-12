@@ -204,11 +204,16 @@ static void arp_req(uint8_t *target_ip)
 void arp_in(buf_t *buf)
 {
     // TODO
+    // 首先进行报头检查
     arp_pkt_t* p = (arp_pkt_t*)buf->data;
-    if(swap16(p->hw_type) != 0x1 || swap16(p->pro_type) != 0x0800 || 
-        p->hw_len != 6 || p->pro_len != 4 || ((swap16(p->opcode) != ARP_REQUEST) && (swap16(p->opcode) != ARP_REPLY))){
-            return;
-        }
+    int opcode = swap16(p->opcode);
+    if(p->hw_type != swap16(ARP_HW_ETHER)
+        || p->pro_type != swap16(NET_PROTOCOL_IP)
+        || p->hw_len != NET_MAC_LEN
+        || p->pro_len != NET_IP_LEN
+        || (opcode != ARP_REQUEST && opcode != ARP_REPLY)
+    )
+        return;
     
     arp_update(p->sender_ip, p->sender_mac, ARP_VALID);
 
@@ -276,7 +281,7 @@ void arp_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol)
                 break;
             }
         }
-        if(j == NET_IP_LEN){
+        if(j == NET_IP_LEN && arp_table[i].state == ARP_VALID){
             break;
         }
     }

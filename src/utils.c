@@ -80,16 +80,26 @@ void buf_copy(buf_t *dst, buf_t *src)
  * @param len 要计算的长度
  * @return uint16_t 校验和
  */
+#define swap16(x) ((((x)&0xFF) << 8) | (((x) >> 8) & 0xFF)) //为16位数据交换大小端
 uint16_t checksum16(uint16_t *buf, int len)
 {
     // TODO
     int len_16 = len/2;
     uint32_t sum = 0;
     for(int i = 0; i < len_16; i++){
-        sum += buf[i];
+        sum += swap16(buf[i]);
     }
-    uint32_t overflow = (sum & 0xf0000) >> 16;
-    uint32_t real_sum = (sum & 0xffff) + overflow;
-    uint16_t return_sum = real_sum & 0xffff;
-    return ~return_sum;
+    
+    uint32_t overflow = (sum >> 16) & 0xffff;
+    if(overflow > 0){
+        while (overflow > 0)
+        {
+            sum = (sum & 0xffff) + overflow;
+            overflow = (sum & 0xffff0000) >> 16;
+        }
+    }else{
+        sum = (sum & 0xffff) + overflow;
+    }
+    
+    return ~sum;
 }

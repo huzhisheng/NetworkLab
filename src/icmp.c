@@ -17,6 +17,7 @@
  * @param buf 要处理的数据包
  * @param src_ip 源ip地址
  */
+
 void icmp_in(buf_t *buf, uint8_t *src_ip)
 {
     // TODO
@@ -30,10 +31,10 @@ void icmp_in(buf_t *buf, uint8_t *src_ip)
         new_icmp->type = 0;
         new_icmp->code = 0;
         new_icmp->checksum = 0;
-        new_icmp->id = 0;
-        new_icmp->seq = 0;
+        new_icmp->id = icmp_head->id;
+        new_icmp->seq = icmp_head->seq;
         memcpy(&txbuf.data[sizeof(icmp_hdr_t)], &buf->data[sizeof(icmp_hdr_t)], buf->len - sizeof(icmp_hdr_t));
-        uint16_t real_checksum = checksum16(&txbuf, txbuf.len); // checksum覆盖的区域是整个ICMP头+ICMP数据?
+        uint16_t real_checksum = checksum16((uint16_t*)(txbuf.data), txbuf.len); // checksum覆盖的区域是整个ICMP头+ICMP数据?
         new_icmp->checksum = swap16(real_checksum);
         ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
     }
@@ -61,7 +62,7 @@ void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code)
     new_icmp->id = 0;
     new_icmp->seq = 0;
     memcpy(&txbuf.data[sizeof(icmp_hdr_t)], recv_buf->data, sizeof(ip_hdr_t) + 8);
-    uint16_t real_checksum = checksum16(&txbuf, txbuf.len);
+    uint16_t real_checksum = checksum16((uint16_t*)(txbuf.data), txbuf.len);
     new_icmp->checksum = swap16(real_checksum);
     ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
 }

@@ -17,9 +17,11 @@
 void ethernet_in(buf_t *buf)
 {
     // TODO
+    // printf("ethernet_in执行\n");
     uint16_t protocol = ((uint16_t)(buf->data[2*NET_MAC_LEN] & 0xff) << 8) | buf->data[2*NET_MAC_LEN + 1];
     
     if(protocol == NET_PROTOCOL_IP){
+        // printf("eth中长度:%d\n",buf->len);
         buf_remove_header(buf,sizeof(struct ether_hdr));
         ip_in(buf);
     }else if(protocol == NET_PROTOCOL_ARP){
