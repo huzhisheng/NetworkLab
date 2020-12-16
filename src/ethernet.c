@@ -18,6 +18,11 @@ void ethernet_in(buf_t *buf)
 {
     // TODO
     // printf("ethernet_in执行\n");
+    // printf("收到的数据为:\n");
+    // for(int i=0; i<buf->len; i++){
+    //     printf("%x ",buf->data[i]);
+    // }
+    // printf("\n");
     uint16_t protocol = ((uint16_t)(buf->data[2*NET_MAC_LEN] & 0xff) << 8) | buf->data[2*NET_MAC_LEN + 1];
     
     if(protocol == NET_PROTOCOL_IP){

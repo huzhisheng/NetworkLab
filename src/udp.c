@@ -85,7 +85,6 @@ void udp_in(buf_t *buf, uint8_t *src_ip)
         printf("udp报头长度错误\n");
         return;
     }
-        
     
     uint16_t old_checksum = swap16(udp_head->checksum);
     udp_head->checksum = 0;
@@ -96,7 +95,7 @@ void udp_in(buf_t *buf, uint8_t *src_ip)
         return;
     }
 
-
+    printf("udp dest port为%d\n",udp_head->dest_port);
     for(int i=0; i<UDP_MAX_HANDLER; i++){
         if(udp_table[i].valid == 1 && udp_table[i].port == swap16(udp_head->dest_port)){
             uint16_t src_port = swap16(udp_head->src_port);

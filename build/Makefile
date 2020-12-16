@@ -312,6 +312,33 @@ src/net.c.s:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/net.c.s
 .PHONY : src/net.c.s
 
+src/tcp.o: src/tcp.c.o
+
+.PHONY : src/tcp.o
+
+# target to build an object file
+src/tcp.c.o:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/tcp.c.o
+.PHONY : src/tcp.c.o
+
+src/tcp.i: src/tcp.c.i
+
+.PHONY : src/tcp.i
+
+# target to preprocess a source file
+src/tcp.c.i:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/tcp.c.i
+.PHONY : src/tcp.c.i
+
+src/tcp.s: src/tcp.c.s
+
+.PHONY : src/tcp.s
+
+# target to generate assembly for a file
+src/tcp.c.s:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/tcp.c.s
+.PHONY : src/tcp.c.s
+
 src/udp.o: src/udp.c.o
 
 .PHONY : src/udp.o
@@ -396,6 +423,9 @@ help:
 	@echo "... src/net.o"
 	@echo "... src/net.i"
 	@echo "... src/net.s"
+	@echo "... src/tcp.o"
+	@echo "... src/tcp.i"
+	@echo "... src/tcp.s"
 	@echo "... src/udp.o"
 	@echo "... src/udp.i"
 	@echo "... src/udp.s"

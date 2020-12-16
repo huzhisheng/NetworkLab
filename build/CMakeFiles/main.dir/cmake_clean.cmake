@@ -6,6 +6,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/main.dir/src/ip.c.o"
   "CMakeFiles/main.dir/src/main.c.o"
   "CMakeFiles/main.dir/src/net.c.o"
+  "CMakeFiles/main.dir/src/tcp.c.o"
   "CMakeFiles/main.dir/src/udp.c.o"
   "CMakeFiles/main.dir/src/utils.c.o"
   "main.pdb"

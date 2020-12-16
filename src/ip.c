@@ -2,8 +2,9 @@
 #include "arp.h"
 #include "icmp.h"
 #include "udp.h"
+#include "tcp.h"
 #include <string.h>
-
+#include <stdio.h>
 /**
  * @brief 处理一个收到的数据包
  *        你首先需要做报头检查，检查项包括：版本号、总长度、首部长度等。
@@ -59,13 +60,19 @@ void ip_in(buf_t *buf)
     
     switch (proto)
     {
-        case NET_PROTOCOL_ICMP: //ICMP
+        case NET_PROTOCOL_ICMP: // ICMP
             buf_remove_header(buf,sizeof(ip_hdr_t));
             icmp_in(buf, src_ip);
             break;
-        case NET_PROTOCOL_UDP:    //UDP
+        case NET_PROTOCOL_UDP:  // UDP
+            printf("Info: 收到UDP数据包\n");
             buf_remove_header(buf,sizeof(ip_hdr_t));
             udp_in(buf, src_ip);
+            break;
+        case NET_PROTOCOL_TCP:  // TCP
+            printf("Info: 收到TCP数据包\n");
+            buf_remove_header(buf,sizeof(ip_hdr_t));
+            tcp_in(buf, src_ip);
             break;
         default:    //发送unreachable的icmp不需要去除ip头
             icmp_unreachable(buf, src_ip, ICMP_CODE_PROTOCOL_UNREACH);
