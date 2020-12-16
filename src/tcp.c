@@ -50,8 +50,8 @@ void tcp_in(buf_t *buf, uint8_t *src_ip){
     uint8_t hdr_len = ((offset_and_flags >> 12) & 0xF)*4;
     uint16_t old_checksum = swap16(tcp_head->checksum);
     tcp_head->checksum = 0;
-    uint8_t my_ip_addr
-    uint16_t new_checksum = tcp_checksum((uint16_t*)buf->data, src_ip, );
+    uint8_t my_ip_addr[NET_IP_LEN] = DRIVER_IF_IP;
+    uint16_t new_checksum = tcp_checksum(buf, src_ip, my_ip_addr);
     if(hdr_len < 20){
         printf("Error: TCP报文首部长度有误, %d\n",hdr_len);
         return;
@@ -122,22 +122,24 @@ void tcp_in(buf_t *buf, uint8_t *src_ip){
                             break;
                     }
                     if(j == NET_IP_LEN){    // 存在请求连接
-                        if(flag_syn != 0 || flag_ack == 0){ // 重复的SYN包或ACK等于0的包, 丢弃
-                            printf("Error: 重复的SYN包或ACK等于0的包\n");
+                        if(flag_syn != 0 || flag_ack == 0){ // 重复的SYN包或ACK等于0的包, 需要重发第2次握手消息
+                            printf("Info: 重复的SYN包或ACK等于0的包\n");
+                            tcp_send_syn(&txbuf, src_ip, 1, seq_num+1, dst_port, src_port);
                             return;
-                        } 
-                        // 是ACK包,说明需要将此request socket变为establish socket
+                        }else{
+                            // 是ACK包,说明需要将此request socket变为establish socket
 
-                        // 将此request socket从队列中拿掉
-                        if(request_last)
-                            request_last->next = request_p->next;
-                        else
-                            tcp_listening_table[i].request_queue = request_p->next;
-                        
-                        if(insert_into_establish(request_p) < 0){   // 收到第3次握手, 将此TCP连接变为established状态
-                            printf("Error: 建立established连接失败\n");
+                            // 将此request socket从队列中拿掉
+                            if(request_last)
+                                request_last->next = request_p->next;
+                            else
+                                tcp_listening_table[i].request_queue = request_p->next;
+                            
+                            if(insert_into_establish(request_p) < 0){   // 收到第3次握手, 将此TCP连接变为established状态
+                                printf("Error: 建立established连接失败\n");
+                            }
+                            return;
                         }
-                        return;
                     }else{
                         request_last = request_p;
                         request_p = request_p->next;
@@ -165,21 +167,7 @@ void tcp_in(buf_t *buf, uint8_t *src_ip){
                 new_request->src_ip[j] = src_ip[j];
             }
             // 建立完request_socket后, 就需要回复给发送方第二次握手的消息
-            buf_init(&txbuf, 0);
-            buf_add_header(&txbuf,sizeof(tcp_hdr_t));
-            uint16_t offset_and_flags = make_offset_and_flags(sizeof(tcp_hdr_t), 1, 1, 0);
-            tcp_hdr_t* tcp_head = (tcp_hdr_t*)txbuf.data;
-            tcp_head->ack_num = swap32(new_request->ack_num);
-            tcp_head->seq_num = swap32(new_request->seq_num);
-            tcp_head->dest_port = swap16(new_request->rport);
-            tcp_head->src_port = swap16(new_request->lport);
-            tcp_head->offset_and_flags = swap16(offset_and_flags);
-            tcp_head->win_len = TCP_WIN_LEN;
-            tcp_head->checksum = 0;
-            tcp_head->urg_point = 0;
-            tcp_head->checksum = swap16(checksum16((uint16_t*)txbuf.data, txbuf.len));
-            ip_out(&txbuf, new_request->src_ip, NET_PROTOCOL_TCP);
-            printf("Info: 第二次握手消息已发送\n");
+            tcp_send_syn(&txbuf, src_ip, 1, seq_num+1, dst_port, src_port);
         }
     }
 }
@@ -274,4 +262,36 @@ int tcp_open(uint16_t lport, tcp_handler_t handler)
             return 0;
         }
     return -1;
+}
+
+void tcp_send_syn(buf_t *buf, uint8_t* dst_ip, int ack_flag, uint32_t ack_num, uint16_t src_port, uint16_t dst_port){
+    buf_init(&txbuf, 0);
+    buf_add_header(&txbuf,sizeof(tcp_hdr_t) + 12);
+    uint16_t offset_and_flags = make_offset_and_flags(sizeof(tcp_hdr_t) + 12, ack_flag, 1, 0);
+    tcp_hdr_t* tcp_head = (tcp_hdr_t*)txbuf.data;
+    tcp_head->ack_num = swap32(ack_num);
+    tcp_head->seq_num = swap32(TCP_SEQ_NUM_INIT);
+    tcp_head->dest_port = swap16(dst_port);
+    tcp_head->src_port = swap16(src_port);
+    tcp_head->offset_and_flags = swap16(offset_and_flags);
+    tcp_head->win_len = TCP_WIN_LEN;
+    tcp_head->checksum = 0;
+    tcp_head->urg_point = 0;
+    // 硬编码填写options字段
+    uint8_t* tcp_options = &txbuf.data[sizeof(tcp_hdr_t)];
+    tcp_options[0] = 2;
+    tcp_options[1] = 4;
+    uint16_t* tcp_mss = (uint16_t*)&tcp_options[2];
+    *tcp_mss = swap16(0x05b4);  // mss=1460
+    tcp_options[4] = 1;
+    tcp_options[5] = 3;
+    tcp_options[6] = 3;
+    tcp_options[7] = 0;
+    tcp_options[8] = 1;
+    tcp_options[9] = 1;
+    tcp_options[10] = 4;
+    tcp_options[11] = 2;
+    tcp_head->checksum = swap16(checksum16((uint16_t*)txbuf.data, txbuf.len));
+    ip_out(&txbuf, dst_ip, NET_PROTOCOL_TCP);
+    printf("Info: 握手消息已发送\n");
 }

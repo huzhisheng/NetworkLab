@@ -2,6 +2,7 @@
 #define TCP_H
 #include <stdint.h>
 #include "utils.h"
+#include "config.h"
 #pragma pack(1)
 typedef struct tcp_hdr
 {
@@ -39,7 +40,7 @@ typedef enum tcp_state
 #define TCP_MAX_LISTENER 16
 #define TCP_MAX_ESTABLISH 32
 #define TCP_WIN_LEN 0x1234
-#define TCP_SEQ_NUM_INIT 0x10000
+#define TCP_SEQ_NUM_INIT 0x1111
 typedef struct tcp_establish_socket_entry tcp_establish_socket_entry_t;
 typedef struct tcp_request_socket_entry tcp_request_socket_entry_t;
 typedef struct tcp_listening_socket_entry tcp_listening_socket_entry_t;
@@ -85,4 +86,5 @@ uint16_t make_offset_and_flags(uint16_t hdr_len, uint8_t flag_ack, uint8_t flag_
 void tcp_out(tcp_establish_socket_entry_t *entry, buf_t *buf, uint16_t offset_and_flags);
 void tcp_init();
 int tcp_open(uint16_t lport, tcp_handler_t handler);
+void tcp_send_syn(buf_t *buf, uint8_t* dst_ip, int ack_flag, uint32_t ack_num, uint16_t src_port, uint16_t dst_port);
 #endif
