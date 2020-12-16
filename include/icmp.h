@@ -2,6 +2,7 @@
 #define ICMP_H
 #include <stdint.h>
 #include "utils.h"
+#include "time.h"
 #pragma pack(1)
 typedef struct icmp_hdr
 {
@@ -32,7 +33,7 @@ typedef enum icmp_code
  * @param buf 要处理的数据包
  * @param src_ip 源ip地址
  */
-void icmp_in(buf_t *buf, uint8_t *src_ip);
+void icmp_in(buf_t *buf, uint8_t *src_ip, uint8_t ttl);
 
 /**
  * @brief 发送icmp不可达
@@ -42,4 +43,17 @@ void icmp_in(buf_t *buf, uint8_t *src_ip);
  * @param code icmp code，协议不可达或端口不可达
  */
 void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code);
+
+#define PING_LIST_SIZE 5
+typedef struct ping_entry
+{
+    int valid;          // 代表该条记录是否有效
+    clock_t timestamp;  // 时间戳
+    uint16_t icmp_seq;  // icmp报文的序列号
+} ping_entry_t;
+
+
+void icmp_ping(uint8_t *dst_ip);
+void icmp_init();
+void icmp_ping_refresh();
 #endif

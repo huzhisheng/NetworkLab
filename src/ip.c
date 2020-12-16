@@ -57,12 +57,12 @@ void ip_in(buf_t *buf)
     for(int i=0; i<NET_IP_LEN; i++){
         src_ip[i] = ip->src_ip[i];
     }
-    
     switch (proto)
     {
         case NET_PROTOCOL_ICMP: // ICMP
+            // printf("Info: 收到ICMP数据包\n");
             buf_remove_header(buf,sizeof(ip_hdr_t));
-            icmp_in(buf, src_ip);
+            icmp_in(buf, src_ip, ip->ttl);
             break;
         case NET_PROTOCOL_UDP:  // UDP
             printf("Info: 收到UDP数据包\n");
@@ -70,10 +70,10 @@ void ip_in(buf_t *buf)
             udp_in(buf, src_ip);
             break;
         case NET_PROTOCOL_TCP:  // TCP
-            printf("Info: 收到TCP数据包\n");
-            buf_remove_header(buf,sizeof(ip_hdr_t));
-            tcp_in(buf, src_ip);
-            break;
+            // printf("Info: 收到TCP数据包\n");
+            // buf_remove_header(buf,sizeof(ip_hdr_t));
+            // tcp_in(buf, src_ip);
+            // break;
         default:    //发送unreachable的icmp不需要去除ip头
             icmp_unreachable(buf, src_ip, ICMP_CODE_PROTOCOL_UNREACH);
             break;

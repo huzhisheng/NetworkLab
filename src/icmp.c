@@ -18,7 +18,11 @@
  * @param src_ip 源ip地址
  */
 
-void icmp_in(buf_t *buf, uint8_t *src_ip)
+static uint16_t ping_seq;
+static uint16_t ping_id = 0x2468;
+ping_entry_t icmp_ping_list[PING_LIST_SIZE];
+
+void icmp_in(buf_t *buf, uint8_t *src_ip, uint8_t ttl)
 {
     // TODO
     if(buf->len < sizeof(icmp_hdr_t)){
@@ -37,6 +41,16 @@ void icmp_in(buf_t *buf, uint8_t *src_ip)
         uint16_t real_checksum = checksum16((uint16_t*)(txbuf.data), txbuf.len); // checksum覆盖的区域是整个ICMP头+ICMP数据?
         new_icmp->checksum = swap16(real_checksum);
         ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
+    }
+    else if(icmp_head->type == 0 && icmp_head->code == 0 && swap16(icmp_head->id) == ping_id){  // ping应答
+        for(int i=0; i<PING_LIST_SIZE; i++){
+            if(icmp_ping_list[i].valid == 1 && icmp_ping_list[i].icmp_seq == swap16(icmp_head->seq)){   // 收到有效应答
+                clock_t now = clock();
+                int duration = (int)((now - icmp_ping_list[i].timestamp)/1000); // 经过的时间, 以毫秒为单位
+                printf("来自%d.%d.%d.%d的回复：字节=%d 时间=%dms TTL=%d\n", src_ip[0], src_ip[1], src_ip[2], src_ip[3], (int)(buf->len-sizeof(icmp_hdr_t)), duration, ttl);
+                icmp_ping_list[i].valid = 0;
+            }
+        }
     }
 }
 
@@ -65,4 +79,50 @@ void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code)
     uint16_t real_checksum = checksum16((uint16_t*)(txbuf.data), txbuf.len);
     new_icmp->checksum = swap16(real_checksum);
     ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
+}
+
+void icmp_ping(uint8_t *dst_ip){
+    printf("发送ping报文到%d.%d.%d.%d\n",dst_ip[0],dst_ip[1],dst_ip[2],dst_ip[3]);
+    buf_init(&txbuf, sizeof(icmp_hdr_t) + 32);  // 填入61到77以及61到69两段数据(16进制)
+    icmp_hdr_t* new_icmp = (icmp_hdr_t*)txbuf.data;
+    new_icmp->type = 8;
+    new_icmp->code = 0;
+    new_icmp->checksum = 0;
+    new_icmp->id = swap16(ping_id);
+    new_icmp->seq = swap16(ping_seq);
+    uint8_t* icmp_data = &txbuf.data[sizeof(icmp_hdr_t)];
+    int i = 0;
+    for(uint8_t d=0x61; d<=0x77; d++){
+        icmp_data[i] = d;
+        i++;
+    }
+    for(uint8_t d=0x61; d<=0x69; d++){
+        icmp_data[i] = d;
+        i++;
+    }
+    uint16_t real_checksum = checksum16((uint16_t*)(txbuf.data), txbuf.len);
+    new_icmp->checksum = swap16(real_checksum);
+    ip_out(&txbuf, dst_ip, NET_PROTOCOL_ICMP);
+
+    // 将此条ping请求报文记录到ping表中
+    icmp_ping_list[ping_seq].icmp_seq = ping_seq;
+    icmp_ping_list[ping_seq].timestamp = clock();
+    icmp_ping_list[ping_seq].valid = 1;
+    ping_seq++;
+}
+
+void icmp_init(){
+    for(int i=0; i<PING_LIST_SIZE; i++){
+        icmp_ping_list[ping_seq].valid = 0;
+    }
+}
+
+void icmp_ping_refresh(){
+    clock_t now = clock();
+    for(int i=0; i<PING_LIST_SIZE; i++){
+        if(icmp_ping_list[ping_seq].valid && ((now - icmp_ping_list[ping_seq].timestamp)/CLOCKS_PER_SEC >= 1)){   // 该ping请求报文已经过期
+            icmp_ping_list[ping_seq].valid = 0;
+            printf("请求超时\n");
+        }
+    }
 }
