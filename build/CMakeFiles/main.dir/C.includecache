@@ -37,8 +37,6 @@ stdint.h
 -
 utils.h
 .././include/utils.h
-time.h
-.././include/time.h
 
 .././include/ip.h
 stdint.h
@@ -157,10 +155,6 @@ udp.h
 /home/cs/NetworkLab/src/udp.h
 tcp.h
 /home/cs/NetworkLab/src/tcp.h
-icmp.h
-/home/cs/NetworkLab/src/icmp.h
-time.h
-/home/cs/NetworkLab/src/time.h
 
 /home/cs/NetworkLab/src/net.c
 net.h
@@ -173,8 +167,6 @@ ethernet.h
 /home/cs/NetworkLab/src/ethernet.h
 tcp.h
 /home/cs/NetworkLab/src/tcp.h
-icmp.h
-/home/cs/NetworkLab/src/icmp.h
 
 /home/cs/NetworkLab/src/tcp.c
 ip.h
