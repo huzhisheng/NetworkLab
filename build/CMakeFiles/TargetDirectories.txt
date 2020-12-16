@@ -1,3 +1,3 @@
-/home/huhu/NetworkLab/net_lab/build/CMakeFiles/rebuild_cache.dir
-/home/huhu/NetworkLab/net_lab/build/CMakeFiles/main.dir
-/home/huhu/NetworkLab/net_lab/build/CMakeFiles/edit_cache.dir
+/home/cs/NetworkLab/build/CMakeFiles/rebuild_cache.dir
+/home/cs/NetworkLab/build/CMakeFiles/main.dir
+/home/cs/NetworkLab/build/CMakeFiles/edit_cache.dir

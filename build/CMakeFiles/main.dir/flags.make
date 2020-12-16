@@ -6,5 +6,5 @@ C_FLAGS =
 
 C_DEFINES = 
 
-C_INCLUDES = -I/home/huhu/NetworkLab/net_lab/./include -I/home/huhu/NetworkLab/net_lab/./pcap 
+C_INCLUDES = -I/home/cs/NetworkLab/./include -I/home/cs/NetworkLab/./pcap 
 
