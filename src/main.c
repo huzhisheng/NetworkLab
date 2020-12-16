@@ -31,11 +31,12 @@ int main(int argc, char const *argv[])
 {
     clock_t start,now;
     int ping_count = 0; // 记录已发送的ping数量
-    uint8_t dst_ip[NET_IP_LEN] = {192, 168, 133, 131};
+    uint8_t dst_ip[NET_IP_LEN] = {192, 168, 133, 133};
     start = now = clock();
 
     net_init();               //初始化协议栈
     udp_open(60000, handler); //注册端口的udp监听回调
+    
     //tcp_open(6666, tcp_handler);
     while (1)
     {   

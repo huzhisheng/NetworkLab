@@ -56,4 +56,5 @@ typedef struct ping_entry
 void icmp_ping(uint8_t *dst_ip);
 void icmp_init();
 void icmp_ping_refresh();
+void ping_total_info();
 #endif
