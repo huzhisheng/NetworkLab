@@ -30,7 +30,7 @@ typedef struct ip_hdr
  * 
  * @param buf 要处理的包
  */
-void ip_in(buf_t *buf);
+void ip_in(buf_t *buf, uint8_t* src_mac);
 
 /**
  * @brief 处理一个要发送的ip数据包

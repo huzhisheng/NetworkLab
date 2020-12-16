@@ -23,12 +23,16 @@ void ethernet_in(buf_t *buf)
     //     printf("%x ",buf->data[i]);
     // }
     // printf("\n");
-    uint16_t protocol = ((uint16_t)(buf->data[2*NET_MAC_LEN] & 0xff) << 8) | buf->data[2*NET_MAC_LEN + 1];
-    
+    uint8_t src_mac[NET_MAC_LEN];
+    ether_hdr_t* ether_head = (ether_hdr_t*)buf->data;
+    uint16_t protocol = swap16(ether_head->protocol);
+    for(int i=0; i<NET_MAC_LEN; i++){
+        src_mac[i] = ether_head->src[i];
+    }
     if(protocol == NET_PROTOCOL_IP){
         // printf("eth中长度:%d\n",buf->len);
         buf_remove_header(buf,sizeof(struct ether_hdr));
-        ip_in(buf);
+        ip_in(buf, src_mac);
     }else if(protocol == NET_PROTOCOL_ARP){
         buf_remove_header(buf,sizeof(struct ether_hdr));
         arp_in(buf);

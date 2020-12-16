@@ -24,7 +24,7 @@
  */
 int ip_id = 0;   // 全局id
 
-void ip_in(buf_t *buf)
+void ip_in(buf_t *buf, uint8_t* src_mac)
 {
     // TODO 
     // printf("ip_in中的长度为:%d\n", buf->len);
@@ -36,7 +36,6 @@ void ip_in(buf_t *buf)
     ){
         return;
     }
-
     uint16_t old_checksum = swap16(ip->hdr_checksum);
     ip->hdr_checksum = 0;
     uint16_t new_checksum = checksum16((uint16_t*)buf->data,sizeof(ip_hdr_t));   //IP的checksum只覆盖IP头
@@ -57,7 +56,7 @@ void ip_in(buf_t *buf)
     for(int i=0; i<NET_IP_LEN; i++){
         src_ip[i] = ip->src_ip[i];
     }
-    
+    arp_update(src_ip, src_mac, ARP_VALID);
     switch (proto)
     {
         case NET_PROTOCOL_ICMP: // ICMP
@@ -70,10 +69,10 @@ void ip_in(buf_t *buf)
             udp_in(buf, src_ip);
             break;
         case NET_PROTOCOL_TCP:  // TCP
-            printf("Info: 收到TCP数据包\n");
-            buf_remove_header(buf,sizeof(ip_hdr_t));
-            tcp_in(buf, src_ip);
-            break;
+            // printf("Info: 收到TCP数据包\n");
+            // buf_remove_header(buf,sizeof(ip_hdr_t));
+            // tcp_in(buf, src_ip);
+            // break;
         default:    //发送unreachable的icmp不需要去除ip头
             icmp_unreachable(buf, src_ip, ICMP_CODE_PROTOCOL_UNREACH);
             break;

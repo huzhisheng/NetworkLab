@@ -78,7 +78,7 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dest_ip)
  */
 void udp_in(buf_t *buf, uint8_t *src_ip)
 {
-    printf("udp_in执行\n");
+    // printf("udp_in执行\n");
     // TODO
     udp_hdr_t* udp_head = (udp_hdr_t*)buf->data;
     if(udp_head->total_len < 8){
@@ -95,12 +95,10 @@ void udp_in(buf_t *buf, uint8_t *src_ip)
         return;
     }
 
-    printf("udp dest port为%d\n",udp_head->dest_port);
     for(int i=0; i<UDP_MAX_HANDLER; i++){
         if(udp_table[i].valid == 1 && udp_table[i].port == swap16(udp_head->dest_port)){
             uint16_t src_port = swap16(udp_head->src_port);
             buf_remove_header(buf,sizeof(udp_hdr_t));
-            printf("长度:%d\n",buf->len);
             udp_table[i].handler(&udp_table[i], src_ip, src_port, buf);
             return;
         }

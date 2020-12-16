@@ -30,7 +30,7 @@ int main(int argc, char const *argv[])
 
     net_init();               //初始化协议栈
     udp_open(60000, handler); //注册端口的udp监听回调
-    tcp_open(6666, tcp_handler);
+    //tcp_open(6666, tcp_handler);
     while (1)
     {
         net_poll(); //一次主循环
