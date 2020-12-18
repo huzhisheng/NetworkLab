@@ -4,16 +4,16 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/home/cs/NetworkLab/src/arp.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/arp.c.o"
-  "/home/cs/NetworkLab/src/driver.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/driver.c.o"
-  "/home/cs/NetworkLab/src/ethernet.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/ethernet.c.o"
-  "/home/cs/NetworkLab/src/icmp.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/icmp.c.o"
-  "/home/cs/NetworkLab/src/ip.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/ip.c.o"
-  "/home/cs/NetworkLab/src/main.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/main.c.o"
-  "/home/cs/NetworkLab/src/net.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/net.c.o"
-  "/home/cs/NetworkLab/src/tcp.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/tcp.c.o"
-  "/home/cs/NetworkLab/src/udp.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/udp.c.o"
-  "/home/cs/NetworkLab/src/utils.c" "/home/cs/NetworkLab/build/CMakeFiles/main.dir/src/utils.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/arp.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/arp.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/driver.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/driver.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/ethernet.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/ethernet.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/icmp.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/icmp.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/ip.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/ip.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/main.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/main.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/net.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/net.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/tcp.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/tcp.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/udp.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/udp.c.o"
+  "/home/huhu/NetworkLab/NetworkLab/src/utils.c" "/home/huhu/NetworkLab/NetworkLab/build/CMakeFiles/main.dir/src/utils.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 

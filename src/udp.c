@@ -44,18 +44,28 @@ static uint16_t udp_checksum(buf_t *buf, uint8_t *src_ip, uint8_t *dest_ip)
         buf->data[i+NET_IP_LEN] = dest_ip[i];
     }
     buf->data[8] = 0;
-    buf->data[9] = 17;
+    buf->data[9] = NET_PROTOCOL_UDP;
     uint16_t* udp_len_p = (uint16_t*)&buf->data[10];
     *udp_len_p = swap16(udp_len);
-    uint16_t real_checksum = checksum16((uint16_t*)buf->data,buf->len);
-    for(int i=0; i<12; i++){
-        buf->data[i] = old_ip_head[i];
+    if(buf->len%2 == 1){    // 长度为奇数
+        buf_t temp_buf;     // 新建一个temp_buf, 其内容就是buf中的内容再加上尾部多出1字节的0
+        memset(temp_buf.payload, 0, sizeof(temp_buf.payload));
+        buf_init(&temp_buf, buf->len+1);
+        memcpy(temp_buf.data, buf->data, buf->len);
+        uint16_t real_checksum = checksum16((uint16_t*)temp_buf.data,temp_buf.len);
+        for(int i=0; i<12; i++){
+            buf->data[i] = old_ip_head[i];
+        }
+        buf_remove_header(buf, 12);
+        return real_checksum;
+    }else{
+        uint16_t real_checksum = checksum16((uint16_t*)buf->data,buf->len);
+        for(int i=0; i<12; i++){
+            buf->data[i] = old_ip_head[i];
+        }
+        buf_remove_header(buf, 12);
+        return real_checksum;
     }
-    buf_remove_header(buf, 12);
-    return real_checksum;
-
-
-
 }
 
 /**
@@ -123,7 +133,7 @@ void udp_in(buf_t *buf, uint8_t *src_ip)
 void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dest_ip, uint16_t dest_port)
 {
     // TODO
-    printf("udp_out执行, 将要发送给%d端口\n",dest_port);
+    // printf("udp_out执行, 将要发送给%d端口\n",dest_port);
     buf_add_header(buf,sizeof(udp_hdr_t));
     udp_hdr_t* udp_head = (udp_hdr_t*)buf->data;
     udp_head->src_port = swap16(src_port);

@@ -64,7 +64,7 @@ void ip_in(buf_t *buf, uint8_t* src_mac)
             icmp_in(buf, src_ip);
             break;
         case NET_PROTOCOL_UDP:  // UDP
-            printf("Info: 收到UDP数据包\n");
+            // printf("Info: 收到UDP数据包\n");
             buf_remove_header(buf,sizeof(ip_hdr_t));
             udp_in(buf, src_ip);
             break;
