@@ -142,7 +142,7 @@ void icmp_init(){
 void icmp_ping_refresh(){
     clock_t now = clock();
     for(int i=0; i<PING_LIST_SIZE; i++){
-        if(icmp_ping_list[i].valid && ((now - icmp_ping_list[i].timestamp)/CLOCKS_PER_SEC >= 2)){   // 该ping请求报文已经过期
+        if(icmp_ping_list[i].valid && ((now - icmp_ping_list[i].timestamp)/CLOCKS_PER_SEC >= 3)){   // 该ping请求报文已经过期
             icmp_ping_list[i].valid = 0;
             printf("请求超时\n");
             // 更新ping请求的统计信息
